@@ -8,6 +8,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             margin: 0;
             background: white;
@@ -15,9 +20,12 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
+            width: 100vw;
+            overflow: hidden;
         }
         canvas {
-            border: 1px solid black;
+            width: 100vw;
+            height: 100vh;
         }
     </style>
 </head>
@@ -27,11 +35,15 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Set canvas size
-        canvas.width = 640;
-        canvas.height = 480;
+        // Set canvas to window size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
-        // Initialize MediaPipe Hands
         const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
         });
@@ -51,10 +63,13 @@
 
             if (results.multiHandLandmarks) {
                 for (const landmarks of results.multiHandLandmarks) {
+                    // Increased from 0.04 to 0.05 for thicker fingers
+                    const baseWidth = Math.min(canvas.width, canvas.height) * 0.05;
+                    
                     // Set style for the hand silhouette
                     ctx.fillStyle = 'black';
                     ctx.strokeStyle = 'black';
-                    ctx.lineWidth = 25;  // Increased width for fingers
+                    ctx.lineWidth = baseWidth;
                     ctx.lineCap = 'round';
                     ctx.lineJoin = 'round';
 
@@ -87,7 +102,6 @@
                             landmarks[finger[0]].x * canvas.width,
                             landmarks[finger[0]].y * canvas.height
                         );
-                        // Draw each finger segment
                         finger.forEach(point => {
                             ctx.lineTo(
                                 landmarks[point].x * canvas.width,
@@ -102,14 +116,13 @@
             ctx.restore();
         });
 
-        // Initialize Camera
         const video = document.createElement('video');
         const camera = new Camera(video, {
             onFrame: async () => {
                 await hands.send({ image: video });
             },
-            width: 640,
-            height: 480,
+            width: window.innerWidth,
+            height: window.innerHeight
         });
         camera.start();
     </script>
